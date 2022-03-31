@@ -234,7 +234,7 @@ def DenseNet(blocks,
     return model
 
 
-def DenseNet121(include_top=True,
+def DenseNet(include_top=True,
                 weights='imagenet',
                 input_tensor=None,
                 input_shape=None,
@@ -248,48 +248,5 @@ def DenseNet121(include_top=True,
                     **kwargs)
 
 
-def DenseNet169(include_top=True,
-                weights='imagenet',
-                input_tensor=None,
-                input_shape=None,
-                pooling=None,
-                classes=1000,
-                **kwargs):
-    return DenseNet([6, 12, 32, 32],
-                    include_top, weights,
-                    input_tensor, input_shape,
-                    pooling, classes,
-                    **kwargs)
+setattr(DenseNet, '__doc__', DenseNet.__doc__)
 
-
-def DenseNet201(include_top=True,
-                weights='imagenet',
-                input_tensor=None,
-                input_shape=None,
-                pooling=None,
-                classes=1000,
-                **kwargs):
-    return DenseNet([6, 12, 48, 32],
-                    include_top, weights,
-                    input_tensor, input_shape,
-                    pooling, classes,
-                    **kwargs)
-
-
-def preprocess_input(x, data_format=None, **kwargs):
-    """Preprocesses a numpy array encoding a batch of images.
-
-    # Arguments
-        x: a 3D or 4D numpy array consists of RGB values within [0, 255].
-        data_format: data format of the image tensor.
-
-    # Returns
-        Preprocessed array.
-    """
-    return imagenet_utils.preprocess_input(x, data_format,
-                                           mode='torch', **kwargs)
-
-
-setattr(DenseNet121, '__doc__', DenseNet.__doc__)
-setattr(DenseNet169, '__doc__', DenseNet.__doc__)
-setattr(DenseNet201, '__doc__', DenseNet.__doc__)

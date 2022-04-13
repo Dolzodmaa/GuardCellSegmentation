@@ -7,27 +7,29 @@
 
 # Reference implementation
 
-- [Torch DenseNets]
-  (https://github.com/liuzhuang13/DenseNet/blob/master/models/densenet.lua)
 - [TensorNets]
   (https://github.com/taehoonlee/tensornets/blob/master/tensornets/densenets.py)
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import os
-from .. import get_submodules_from_kwargs
 from keras_applications import imagenet_utils
 from keras_applications.imagenet_utils import decode_predictions
 from keras_applications.imagenet_utils import _obtain_input_shape
-from ..weights import load_model_weights
+from weights import load_model_weights
+import keras_applications as ka
+from .__version__ import __version__
 
 backend = None
 layers = None
 models = None
 keras_utils = None
 
+def get_submodules_from_kwargs(kwargs):
+    backend = kwargs.get('backend', ka._KERAS_BACKEND)
+    layers = kwargs.get('layers', ka._KERAS_LAYERS)
+    models = kwargs.get('models', ka._KERAS_MODELS)
+    utils = kwargs.get('utils', ka._KERAS_UTILS)
+    return backend, layers, models, utils
 
 def dense_block(x, blocks, name):
     """A dense block.

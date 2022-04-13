@@ -1,0 +1,10 @@
+tensorflow>=2.3.2
+keras_applications>=1.0.8
+patchify
+numpy
+scikit-image
+matplotlib
+scikit-learn
+opencv-python
+tifffile
+

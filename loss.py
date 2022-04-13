@@ -87,30 +87,6 @@ class Loss(KerasObject):
         return self.__mul__(other)
 
 class DiceLoss(Loss):
-    r"""Creates a criterion to measure Dice loss:
-    .. math:: L(precision, recall) = 1 - (1 + \beta^2) \frac{precision \cdot recall}
-        {\beta^2 \cdot precision + recall}
-    The formula in terms of *Type I* and *Type II* errors:
-    .. math:: L(tp, fp, fn) = \frac{(1 + \beta^2) \cdot tp} {(1 + \beta^2) \cdot fp + \beta^2 \cdot fn + fp}
-    where:
-         - tp - true positives;
-         - fp - false positives;
-         - fn - false negatives;
-    Args:
-        beta: Float or integer coefficient for precision and recall balance.
-        class_weights: Array (``np.array``) of class weights (``len(weights) = num_classes``).
-        class_indexes: Optional integer or list of integers, classes to consider, if ``None`` all classes are used.
-        per_image: If ``True`` loss is calculated for each image in batch and then averaged,
-        else loss is calculated for the whole batch.
-        smooth: Value to avoid division by zero.
-    Returns:
-        A callable ``dice_loss`` instance. Can be used in ``model.compile(...)`` function`
-        or combined with other losses.
-    Example:
-    .. code:: python
-        loss = DiceLoss()
-        model.compile('SGD', loss=loss)
-    """
 
     def __init__(self, beta=1, class_weights=None, class_indexes=None, per_image=False, smooth=SMOOTH):
         super().__init__(name='dice_loss')
@@ -135,20 +111,6 @@ class DiceLoss(Loss):
 
 
 class BinaryFocalLoss(Loss):
-    r"""Creates a criterion that measures the Binary Focal Loss between the
-    ground truth (gt) and the prediction (pr).
-    .. math:: L(gt, pr) = - gt \alpha (1 - pr)^\gamma \log(pr) - (1 - gt) \alpha pr^\gamma \log(1 - pr)
-    Args:
-        alpha: Float or integer, the same as weighting factor in balanced cross entropy, default 0.25.
-        gamma: Float or integer, focusing parameter for modulating factor (1 - p), default 2.0.
-    Returns:
-        A callable ``binary_focal_loss`` instance. Can be used in ``model.compile(...)`` function
-        or combined with other losses.
-    Example:
-    .. code:: python
-        loss = BinaryFocalLoss()
-        model.compile('SGD', loss=loss)
-    """
 
     def __init__(self, alpha=0.25, gamma=2.):
         super().__init__(name='binary_focal_loss')

@@ -52,24 +52,7 @@ def average(x, per_image=False, class_weights=None, **kwargs):
 # ----------------------------------------------------------------
 
 def iou_score(gt, pr, class_weights=1., class_indexes=None, smooth=SMOOTH, per_image=False, threshold=None, **kwargs):
-    r""" The `Jaccard index`_, also known as Intersection over Union and the Jaccard similarity coefficient
-    (originally coined coefficient de communauté by Paul Jaccard), is a statistic used for comparing the
-    similarity and diversity of sample sets. The Jaccard coefficient measures similarity between finite sample sets,
-    and is defined as the size of the intersection divided by the size of the union of the sample sets:
-    .. math:: J(A, B) = \frac{A \cap B}{A \cup B}
-    Args:
-        gt: ground truth 4D keras tensor (B, H, W, C) or (B, C, H, W)
-        pr: prediction 4D keras tensor (B, H, W, C) or (B, C, H, W)
-        class_weights: 1. or list of class weights, len(weights) = C
-        class_indexes: Optional integer or list of integers, classes to consider, if ``None`` all classes are used.
-        smooth: value to avoid division by zero
-        per_image: if ``True``, metric is calculated as mean over images in batch (B),
-            else over whole batch
-        threshold: value to round predictions (use ``>`` comparison), if ``None`` prediction will not be round
-    Returns:
-        IoU/Jaccard score in range [0, 1]
-    .. _`Jaccard index`: https://en.wikipedia.org/wiki/Jaccard_index
-    """
+
 
     backend = kwargs['backend']
 
@@ -89,31 +72,7 @@ def iou_score(gt, pr, class_weights=1., class_indexes=None, smooth=SMOOTH, per_i
 
 def f_score(gt, pr, beta=1, class_weights=1, class_indexes=None, smooth=SMOOTH, per_image=False, threshold=None,
             **kwargs):
-    r"""The F-score (Dice coefficient) can be interpreted as a weighted average of the precision and recall,
-    where an F-score reaches its best value at 1 and worst score at 0.
-    The relative contribution of ``precision`` and ``recall`` to the F1-score are equal.
-    The formula for the F score is:
-    .. math:: F_\beta(precision, recall) = (1 + \beta^2) \frac{precision \cdot recall}
-        {\beta^2 \cdot precision + recall}
-    The formula in terms of *Type I* and *Type II* errors:
-    .. math:: F_\beta(A, B) = \frac{(1 + \beta^2) TP} {(1 + \beta^2) TP + \beta^2 FN + FP}
-    where:
-        TP - true positive;
-        FP - false positive;
-        FN - false negative;
-    Args:
-        gt: ground truth 4D keras tensor (B, H, W, C) or (B, C, H, W)
-        pr: prediction 4D keras tensor (B, H, W, C) or (B, C, H, W)
-        class_weights: 1. or list of class weights, len(weights) = C
-        class_indexes: Optional integer or list of integers, classes to consider, if ``None`` all classes are used.
-        beta: f-score coefficient
-        smooth: value to avoid division by zero
-        per_image: if ``True``, metric is calculated as mean over images in batch (B),
-            else over whole batch
-        threshold: value to round predictions (use ``>`` comparison), if ``None`` prediction will not be round
-    Returns:
-        F-score in range [0, 1]
-    """
+   
 
     backend = kwargs['backend']
 
@@ -134,24 +93,7 @@ def f_score(gt, pr, beta=1, class_weights=1, class_indexes=None, smooth=SMOOTH, 
 
 
 def precision(gt, pr, class_weights=1, class_indexes=None, smooth=SMOOTH, per_image=False, threshold=None, **kwargs):
-    r"""Calculate precision between the ground truth (gt) and the prediction (pr).
-    .. math:: F_\beta(tp, fp) = \frac{tp} {(tp + fp)}
-    where:
-         - tp - true positives;
-         - fp - false positives;
-    Args:
-        gt: ground truth 4D keras tensor (B, H, W, C) or (B, C, H, W)
-        pr: prediction 4D keras tensor (B, H, W, C) or (B, C, H, W)
-        class_weights: 1. or ``np.array`` of class weights (``len(weights) = num_classes``)
-        class_indexes: Optional integer or list of integers, classes to consider, if ``None`` all classes are used.
-        smooth: Float value to avoid division by zero.
-        per_image: If ``True``, metric is calculated as mean over images in batch (B),
-            else over whole batch.
-        threshold: Float value to round predictions (use ``>`` comparison), if ``None`` prediction will not be round.
-        name: Optional string, if ``None`` default ``precision`` name is used.
-    Returns:
-        float: precision score
-    """
+
     backend = kwargs['backend']
 
     gt, pr = gather_channels(gt, pr, indexes=class_indexes, **kwargs)
@@ -169,24 +111,7 @@ def precision(gt, pr, class_weights=1, class_indexes=None, smooth=SMOOTH, per_im
 
 
 def recall(gt, pr, class_weights=1, class_indexes=None, smooth=SMOOTH, per_image=False, threshold=None, **kwargs):
-    r"""Calculate recall between the ground truth (gt) and the prediction (pr).
-    .. math:: F_\beta(tp, fn) = \frac{tp} {(tp + fn)}
-    where:
-         - tp - true positives;
-         - fp - false positives;
-    Args:
-        gt: ground truth 4D keras tensor (B, H, W, C) or (B, C, H, W)
-        pr: prediction 4D keras tensor (B, H, W, C) or (B, C, H, W)
-        class_weights: 1. or ``np.array`` of class weights (``len(weights) = num_classes``)
-        class_indexes: Optional integer or list of integers, classes to consider, if ``None`` all classes are used.
-        smooth: Float value to avoid division by zero.
-        per_image: If ``True``, metric is calculated as mean over images in batch (B),
-            else over whole batch.
-        threshold: Float value to round predictions (use ``>`` comparison), if ``None`` prediction will not be round.
-        name: Optional string, if ``None`` default ``precision`` name is used.
-    Returns:
-        float: recall score
-    """
+
     backend = kwargs['backend']
 
     gt, pr = gather_channels(gt, pr, indexes=class_indexes, **kwargs)
@@ -229,16 +154,7 @@ def binary_crossentropy(gt, pr, **kwargs):
 
 
 def categorical_focal_loss(gt, pr, gamma=2.0, alpha=0.25, class_indexes=None, **kwargs):
-    r"""Implementation of Focal Loss from the paper in multiclass classification
-    Formula:
-        loss = - gt * alpha * ((1 - pr)^gamma) * log(pr)
-    Args:
-        gt: ground truth 4D keras tensor (B, H, W, C) or (B, C, H, W)
-        pr: prediction 4D keras tensor (B, H, W, C) or (B, C, H, W)
-        alpha: the same as weighting factor in balanced cross entropy, default 0.25
-        gamma: focusing parameter for modulating factor (1-p), default 2.0
-        class_indexes: Optional integer or list of integers, classes to consider, if ``None`` all classes are used.
-    """
+
 
     backend = kwargs['backend']
     gt, pr = gather_channels(gt, pr, indexes=class_indexes, **kwargs)
@@ -253,16 +169,7 @@ def categorical_focal_loss(gt, pr, gamma=2.0, alpha=0.25, class_indexes=None, **
 
 
 def binary_focal_loss(gt, pr, gamma=2.0, alpha=0.25, **kwargs):
-    r"""Implementation of Focal Loss from the paper in binary classification
-    Formula:
-        loss = - gt * alpha * ((1 - pr)^gamma) * log(pr) \
-               - (1 - gt) * alpha * (pr^gamma) * log(1 - pr)
-    Args:
-        gt: ground truth 4D keras tensor (B, H, W, C) or (B, C, H, W)
-        pr: prediction 4D keras tensor (B, H, W, C) or (B, C, H, W)
-        alpha: the same as weighting factor in balanced cross entropy, default 0.25
-        gamma: focusing parameter for modulating factor (1-p), default 2.0
-    """
+
     backend = kwargs['backend']
 
     # clip to prevent NaN's and Inf's

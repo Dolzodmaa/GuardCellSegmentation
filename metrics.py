@@ -137,6 +137,5 @@ class Recall(Metric):
 # aliases
 iou_score = IOUScore()
 f1_score = FScore(beta=1)
-f2_score = FScore(beta=2)
 precision = Precision()
 recall = Recall()

@@ -2,6 +2,9 @@
 
 from keras_applications import get_submodules_from_kwargs
 from . import inject_global_submodules
+from patchify import patchify, unpatchify
+import numpy as np
+import cv2
 
 
 def set_trainable(model, recompile=True, **kwargs):

@@ -1,22 +1,16 @@
 import tensorflow as tf
-import keras
 import numpy as np
 import os
-import segmentation_models_3D as sm
-from skimage import io, img_as_float, img_as_ubyte, morphology
-#from patchify import patchify, unpatchify
+from skimage import io
 import numpy as np
 from matplotlib import pyplot as plt
 from tensorflow.keras import backend as K
 from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 import math
-from skimage.transform import rescale, resize
-from PIL import Image
 from tifffile import imsave
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, LearningRateScheduler
 from skimage.restoration import denoise_nl_means, estimate_sigma
-#tensorflow.from tensorflow.python.keras.utils import multi_gpu_model
 from tensorflow.keras.models import load_model
 from loss import dice_loss, binary_focal_loss
 from model import Attention_UNet
@@ -36,6 +30,8 @@ def get_args():
     parser.add_argument("--batch_size", default = 4, help="batch size for training")
     parser.add_argument("--gamma_total_loss", default = 1, help="weight for focal loss")
     parser.add_argument("--dropout_rate", default = 0.15, help="dropout rate")
+    parser.add_argument("--load_model", default = False, help="train from the saved model")
+    parser.add_argument("--model_dir", help="saved model directory")
     args = parser.parse_args()
     return args
 
@@ -51,7 +47,7 @@ def main():
     metrics = [iou_score, f1_score, precision, recall]
 
     model = Attention_UNet(BACKBONE, classes=1, 
-                    input_shape=(32, 128, 128, channels), 
+                    input_shape=(32, 128, 128, 3), 
                     encoder_weights='imagenet',
                     activation=activation,
                     dropout=args.dropout_rate

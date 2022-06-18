@@ -66,3 +66,19 @@ def freeze_model(model, **kwargs):
         if not isinstance(layer, layers.BatchNormalization):
             layer.trainable = False
     return
+
+def resize_to_512(image):
+  img_stack_sm = np.zeros((32, 512, 512), dtype="float32")
+
+  for idx in range(512):
+      img = image[:, :, idx]
+      img_sm = cv2.resize(img, (512, 32), interpolation= cv2.INTER_LINEAR)
+      img_stack_sm[:, :, idx] = img_sm
+      
+  return img_stack_sm
+
+def make_patches(image):
+  img_patches = patchify(image, (32, 256, 256), step=64)
+  input_img = np.reshape(img_patches, (-1, img_patches.shape[3], img_patches.shape[4], img_patches.shape[5]))
+  return input_img
+

@@ -4,21 +4,16 @@
     PATCH-WISE, ATTENTION GATED 3D MODEL
 
 """
-
-
-
 from keras_applications import get_submodules_from_kwargs
 
 from common import Conv3dBn
-from utils import freeze_model
-import densenet
 from tensorflow.keras import backend as K
+from backbone import backbone
 
 backend = None
 layers = None
 models = None
 keras_utils = None
-print('Updated')
 
 # ---------------------------------------------------------------------
 #  Utility functions
@@ -36,6 +31,13 @@ def get_submodules():
 # ---------------------------------------------------------------------
 #  Blocks
 # ---------------------------------------------------------------------
+def freeze_model(model, **kwargs):
+    """Set all layers non trainable, excluding BatchNormalization layers"""
+    _, layers, _, _ = get_submodules_from_kwargs(kwargs)
+    for layer in model.layers:
+        if not isinstance(layer, layers.BatchNormalization):
+            layer.trainable = False
+    return
 
 def Conv3x3BnReLU(filters, use_batchnorm, name=None):
     kwargs = get_submodules()
@@ -306,7 +308,7 @@ def Attention_UNet(backbone_name='densenet',
         raise ValueError('Decoder block type should be in ("upsampling", "transpose"). '
                          'Got: {}'.format(decoder_block_type))
 
-    backbone = Backbones.get_backbone(
+    backbone = backbone.get_backbone(
         backbone_name,
         input_shape=input_shape,
         weights=encoder_weights,
@@ -315,7 +317,7 @@ def Attention_UNet(backbone_name='densenet',
     )
 
     if encoder_features == 'default':
-        encoder_features = Backbones.get_feature_layers(backbone_name, n=4)
+        encoder_features = backbone.get_feature_layers(backbone_name, n=4)
 
     model = build_unet(
         backbone=backbone,

@@ -248,7 +248,16 @@ def DenseNet(include_top=True,
                     input_tensor, input_shape,
                     pooling, classes,
                     **kwargs)
-
+                    
+def preprocess_input(x, data_format=None, **kwargs):
+    """Preprocesses a numpy array encoding a batch of images.
+    # Arguments
+        x: a 3D or 4D numpy array consists of RGB values within [0, 255].
+        data_format: data format of the image tensor.
+    # Returns
+        Preprocessed array.
+    """
+    return imagenet_utils.preprocess_input(x, data_format, mode='torch', **kwargs)
 
 setattr(DenseNet, '__doc__', DenseNet.__doc__)
 

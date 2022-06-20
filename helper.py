@@ -1,9 +1,12 @@
 SMOOTH = 1e-5
+import tensorflow as tf
+import keras
+
 class KerasObject:
-    _backend = None
-    _models = None
-    _layers = None
-    _utils = None
+    _backend = keras.backend
+    _models = keras.models
+    _layers = keras.layers
+    _utils = keras.utils
 
     def __init__(self, name=None):
         if (self.backend is None or

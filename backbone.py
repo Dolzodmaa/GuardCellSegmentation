@@ -1,11 +1,11 @@
 import functools
 import keras_applications as ka
-from densenet import DenseNet as dn
+import densenet as dn
 import copy
 
 class Model:
     _models = {
-        'densenet': [dn.DenseNet, dn.preprocess_input],
+        'densenet': [dn.densenet, dn.preprocess_input],
     }
 
     @property
@@ -44,9 +44,7 @@ class Backbone(Model):
     @property
     def models(self):
         all_models = copy.copy(self._models)
-        all_models.update(self._models_update)
-        for k in self._models_delete:
-            del all_models[k]
+    
         return all_models
 
     def get_backbone(self, name, *args, **kwargs):
@@ -60,5 +58,4 @@ class Backbone(Model):
     def get_preprocessing(self, name):
         return self.get(name)[1]
 
-
-backbone = Backbone()
+Backbone = Backbone()

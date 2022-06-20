@@ -8,8 +8,9 @@ from keras_applications import get_submodules_from_kwargs
 
 from common import Conv3dBn
 from tensorflow.keras import backend as K
-from backbone import backbone
-import keras
+from backbone import Backbone
+import tensorflow as tf
+from tensorflow import keras
 
 backend=keras.backend
 layers=keras.layers
@@ -25,7 +26,7 @@ def get_submodules():
         'backend': backend,
         'models': models,
         'layers': layers,
-        'utils': keras_utils,
+        'utils': utils,
     }
 
 
@@ -165,7 +166,7 @@ def DecoderAttnTransposeX2Block(filters, stage, use_batchnorm=False):
     conv_block_name = 'decoder_stage{}b'.format(stage)
     concat_name = 'decoder_stage{}_concat'.format(stage)
 
-    concat_axis = bn_axis = 4 if backend.image_data_format() == 'channels_last' else 1
+    concat_axis = bn_axis = 4 if keras.backend.image_data_format() == 'channels_last' else 1
 
     def layer(input_tensor, skip=None):
         
@@ -238,10 +239,10 @@ def build_unet(
     # extract skip connections
     skips = ([backbone.get_layer(name=i).output if isinstance(i, str)
               else backbone.get_layer(index=i).output for i in skip_connection_layers])
-    print(skips)
+    
 
     # add center block if previous operation was maxpooling (for vgg models)
-    if isinstance(backbone.layers[-1], layers.MaxPooling3D):
+    if isinstance(backbone.layers[-1], keras.layers.MaxPooling3D):
         x = Conv3x3BnReLU(512, use_batchnorm, name='center_block1')(x)
         x = Conv3x3BnReLU(512, use_batchnorm, name='center_block2')(x)
 
@@ -298,9 +299,7 @@ def Attention_UNet(backbone_name='densenet',
     Attention 3DUNet, 
     
     '''
-    global backend, layers, models, keras_utils
-    backend, layers, models, keras_utils = get_submodules_from_kwargs(kwargs)
-
+    
     if decoder_block_type == 'upsampling':
         decoder_block = DecoderAttnUpsamplingX2Block
     elif decoder_block_type == 'transpose':
@@ -309,16 +308,17 @@ def Attention_UNet(backbone_name='densenet',
         raise ValueError('Decoder block type should be in ("upsampling", "transpose"). '
                          'Got: {}'.format(decoder_block_type))
 
-    backbone = backbone.get_backbone(
+    backbone = Backbone.get_backbone(
         backbone_name,
         input_shape=input_shape,
         weights=encoder_weights,
         include_top=False,
         **kwargs,
     )
+    print(backbone)
 
     if encoder_features == 'default':
-        encoder_features = backbone.get_feature_layers(backbone_name, n=4)
+        encoder_features = Backbone.get_feature_layers(backbone_name, n=4)
 
     model = build_unet(
         backbone=backbone,
@@ -334,7 +334,7 @@ def Attention_UNet(backbone_name='densenet',
 
     # lock encoder weights for fine-tuning
     if encoder_freeze:
-        freeze_model(backbone, **kwargs)
+        freeze_model(Backbone, **kwargs)
 
     # loading model weights
     if weights is not None:

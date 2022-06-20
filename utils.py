@@ -1,11 +1,22 @@
 """ Utility functions for segmentation models """
 
 from keras_applications import get_submodules_from_kwargs
-from . import inject_global_submodules
 from patchify import patchify, unpatchify
 import numpy as np
 import cv2
+import keras
+import functools
 
+def inject_global_submodules(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        kwargs['backend'] = keras.backend
+        kwargs['layers'] = keras.layers
+        kwargs['models'] = keras.models
+        kwargs['utils'] = keras.utils
+        return func(*args, **kwargs)
+
+    return wrapper
 
 def set_trainable(model, recompile=True, **kwargs):
    
@@ -58,10 +69,6 @@ def set_regularization(
     out.set_weights(model.get_weights())
 
     return out
-
-from keras_applications import get_submodules_from_kwargs
-
-
 def freeze_model(model, **kwargs):
     """Set all layers non trainable, excluding BatchNormalization layers"""
     _, layers, _, _ = get_submodules_from_kwargs(kwargs)

@@ -13,7 +13,7 @@
 
 import os
 from keras_applications import imagenet_utils
-import keras
+from tensorflow import keras
 from keras_applications.imagenet_utils import decode_predictions
 from keras_applications.imagenet_utils import _obtain_input_shape
 from weights import load_model_weights
@@ -24,12 +24,6 @@ layers=keras.layers
 models=keras.models
 utils=keras.utils
 
-def get_submodules_from_kwargs(kwargs):
-    backend = kwargs.get('backend', ka._KERAS_BACKEND)
-    layers = kwargs.get('layers', ka._KERAS_LAYERS)
-    models = kwargs.get('models', ka._KERAS_MODELS)
-    utils = kwargs.get('utils', ka._KERAS_UTILS)
-    return backend, layers, models, utils
 
 def dense_block(x, blocks, name):
     """A dense block.
@@ -152,8 +146,8 @@ def DenseNet(blocks,
         ValueError: in case of invalid argument for `weights`,
             or invalid input shape.
     """
-    global backend, layers, models, keras_utils
-    backend, layers, models, keras_utils = get_submodules_from_kwargs(kwargs)
+    #global backend, layers, models, keras_utils
+    #backend, layers, models, keras_utils = 
 
     if not (weights in {'imagenet', None} or os.path.exists(weights)):
         raise ValueError('The `weights` argument should be either '
@@ -207,24 +201,14 @@ def DenseNet(blocks,
     # Ensure that the model takes into account
     # any potential predecessors of `input_tensor`.
     if input_tensor is not None:
-        inputs = keras_utils.get_source_inputs(input_tensor)
+        inputs = utils.get_source_inputs(input_tensor)
     else:
         inputs = img_input
 
     # Create model.
-    model_name = ''
-    if blocks == [6, 12, 24, 16]:
-        model_name = 'densenet121'
-        model = models.Model(inputs, x, name='densenet121')
-    elif blocks == [6, 12, 32, 32]:
-        model_name = 'densenet169'
-        model = models.Model(inputs, x, name='densenet169')
-    elif blocks == [6, 12, 48, 32]:
-        model_name = 'densenet201'
-        model = models.Model(inputs, x, name='densenet201')
-    else:
-        model_name = 'densenet'
-        model = models.Model(inputs, x, name='densenet')
+   
+    model_name = 'densenet'
+    model = models.Model(inputs, x, name='densenet')
 
     # Load weights.
     if weights:
@@ -236,7 +220,7 @@ def DenseNet(blocks,
     return model
 
 
-def DenseNet(include_top=True,
+def densenet(include_top=True,
                 weights='imagenet',
                 input_tensor=None,
                 input_shape=None,

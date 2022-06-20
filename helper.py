@@ -13,6 +13,7 @@ class KerasObject:
                 self.utils is None or
                 self.models is None or
                 self.layers is None):
+                                 
             raise RuntimeError('You cannot use `KerasObjects` with None submodules.')
 
         self._name = name

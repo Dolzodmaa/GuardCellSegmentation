@@ -1,3 +1,5 @@
+
+
 import tensorflow as tf
 import numpy as np
 import os
@@ -8,6 +10,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 import math
+import functools
 from tifffile import imsave
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, LearningRateScheduler
 from skimage.restoration import denoise_nl_means, estimate_sigma
@@ -15,7 +18,17 @@ from tensorflow.keras.models import load_model
 from loss import dice_loss, binary_focal_loss
 from model import Attention_UNet
 from dataset import dataset_loader
+import argparse
+import keras
+import helper
+helper.KerasObject.set_submodules(
+        backend= keras.backend,
+        layers= keras.layers,
+        models= keras.models,
+        utils= keras.utils,
+    )
 from metrics import iou_score, f1_score, precision, recall
+
 
 def get_args():
     parser = argparse.ArgumentParser(
@@ -34,8 +47,25 @@ def get_args():
     parser.add_argument("--model_dir", help="saved model directory")
     args = parser.parse_args()
     return args
+    
+def inject_global_submodules(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        kwargs['backend'] = keras.backend
+        kwargs['layers'] = keras.layers
+        kwargs['models'] = keras.models
+        kwargs['utils'] = keras.utils
+        return func(*args, **kwargs)
+
+    return wrapper
 
 def main():
+    helper.KerasObject.set_submodules(
+        backend=keras.backend,
+        layers=keras.layers,
+        models=keras.models,
+        utils=keras.utils,
+    )
     args = get_args()
    
     BACKBONE = 'densenet' 
@@ -52,6 +82,7 @@ def main():
                     activation=activation,
                     dropout=args.dropout_rate
                     )
+                    
     model.compile(optimizer = optim, loss=total_loss, metrics=metrics)
 
     def lr_exp_decay(epoch, lr):

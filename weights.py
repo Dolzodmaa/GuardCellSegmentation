@@ -1,13 +1,9 @@
-import keras_applications as ka
+from tensorflow import keras
 
-
-def get_submodules_from_kwargs(kwargs):
-    backend = kwargs.get('backend', ka._KERAS_BACKEND)
-    layers = kwargs.get('layers', ka._KERAS_LAYERS)
-    models = kwargs.get('models', ka._KERAS_MODELS)
-    utils = kwargs.get('utils', ka._KERAS_UTILS)
-    return backend, layers, models, 
-
+backend=keras.backend
+layers=keras.layers
+models=keras.models
+utils=keras.utils
 
 def _find_weights(model_name, dataset, include_top):
     w = list(filter(lambda x: x['model'] == model_name, WEIGHTS_COLLECTION))
@@ -17,8 +13,7 @@ def _find_weights(model_name, dataset, include_top):
 
 
 def load_model_weights(model, model_name, dataset, classes, include_top, **kwargs):
-    _, _, _, keras_utils = get_submodules_from_kwargs(kwargs)
-
+    
     weights = _find_weights(model_name, dataset, include_top)
 
     if weights:
@@ -28,7 +23,7 @@ def load_model_weights(model, model_name, dataset, classes, include_top, **kwarg
             raise ValueError('If using `weights` and `include_top`'
                              ' as true, `classes` should be {}'.format(weights['classes']))
 
-        weights_path = keras_utils.get_file(
+        weights_path = utils.get_file(
             weights['name'],
             weights['url'],
             cache_subdir='models',

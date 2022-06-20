@@ -1,5 +1,4 @@
 import keras_applications as ka
-from .__version__ import __version__
 
 
 def get_submodules_from_kwargs(kwargs):
@@ -47,7 +46,7 @@ __all__ = ['load_model_weights']
 
 WEIGHTS_COLLECTION = [
 
-    # densenet121
+    # densenet
     {
         'model': 'densenet',
         'dataset': 'imagenet',
@@ -57,7 +56,7 @@ WEIGHTS_COLLECTION = [
         'name': 'densenet121_inp_channel_3_tch_0_top_False.h5',
         'md5': '743ea52b43c19000d9c4dcd328fd3f9d',
     },
-    # densenet121
+    # densenet
     {
         'model': 'densenet',
         'dataset': 'imagenet',

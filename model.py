@@ -9,11 +9,12 @@ from keras_applications import get_submodules_from_kwargs
 from common import Conv3dBn
 from tensorflow.keras import backend as K
 from backbone import backbone
+import keras
 
-backend = None
-layers = None
-models = None
-keras_utils = None
+backend=keras.backend
+layers=keras.layers
+models=keras.models
+utils=keras.utils
 
 # ---------------------------------------------------------------------
 #  Utility functions

@@ -1,6 +1,6 @@
 import functools
 import keras_applications as ka
-from densenet import densenet as dn
+from densenet import DenseNet as dn
 import copy
 
 class Model:

@@ -13,16 +13,16 @@
 
 import os
 from keras_applications import imagenet_utils
+import keras
 from keras_applications.imagenet_utils import decode_predictions
 from keras_applications.imagenet_utils import _obtain_input_shape
 from weights import load_model_weights
 import keras_applications as ka
-from .__version__ import __version__
 
-backend = None
-layers = None
-models = None
-keras_utils = None
+backend=keras.backend
+layers=keras.layers
+models=keras.models
+utils=keras.utils
 
 def get_submodules_from_kwargs(kwargs):
     backend = kwargs.get('backend', ka._KERAS_BACKEND)

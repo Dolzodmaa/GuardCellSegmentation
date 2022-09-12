@@ -2,12 +2,11 @@ import tensorflow as tf
 import keras
 import numpy as np
 import os
-import segmentation_models_3D as sm
 from skimage import io, img_as_float, img_as_ubyte, morphology
-#from patchify import patchify, unpatchify
 import numpy as np
 from matplotlib import pyplot as plt
 from tensorflow.keras import backend as K
+from keras import backend as K
 from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 import cv2
@@ -18,110 +17,155 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, Learnin
 from skimage.restoration import denoise_nl_means, estimate_sigma
 #tensorflow.from tensorflow.python.keras.utils import multi_gpu_model
 from tensorflow.keras.models import load_model
-
+import argparse
 from utils import resize_to_512, make_patches, resize_back
-
-#Load the pretrained model for testing and predictions. 
+import cc3d
 from keras.models import load_model
-my_model1 = load_model(latest_85, compile=False)
-my_model2 = load_model(model_88, compile=False)
-#model = load_model(unet_2d, compile=False)
+from utils import denoise
+from keras import backend as K
+from loss import dice_loss, binary_focalloss
+from metrics import iou_score, f1_score, precision, recall
 
 
-#img_path = '/content/drive/MyDrive/Guard_cell_data/Training/new_img_test/f23a.tif'
-large_image = io.imread('/content/drive/MyDrive/Guard_cell_data/Training/new_img_test/f4a.tif')
-#large_image = denoise(img_path)
-l_img = large_image
-#large_image = repeat_to_512(large_image, large_image.shape[0])
-large_image = (large_image - large_image.min())/(large_image.max()-large_image.min())
-print(large_image.max())
-print(large_image.min())
-large_image = resize_to_512(large_image)
-step = 32
-patch_size = 256
-#patches = patchify(large_image, (32, patch_size, patch_size), step=64)  
-#print(large_image.shape)
-#print(patches.shape)
-pred = np.zeros((32, patch_size, patch_size), dtype= "float32")
-pred2 = np.zeros((32, 512, 512), dtype= "float32")
-prob = np.zeros((32, 512, 512), dtype= "float32")
-# Predict each 3D patch   
-predicted_patches = []
-p1 = (512-patch_size)//step + 1
-for i in range(p1):
-  #print(i)
-  for j in range(p1):
-    #print(j)
-    single_patch = large_image[:,i*step:i*step+patch_size, j*step:j*step+patch_size]
-    #print('patch', single_patch.shape)
-    single_patch_3ch = np.stack((single_patch,)*3, axis=-1)
-    single_patch_3ch_input = np.expand_dims(single_patch_3ch, axis=0)
-    single_patch_prediction1 = my_model1.predict(single_patch_3ch_input)
-    
-    patch_mask1 = np.reshape(single_patch_prediction1, (32,patch_size,patch_size))
+def get_args():
+  parser = argparse.ArgumentParser(
+      formatter_class=argparse.RawDescriptionHelpFormatter,
+  )
+  
+  parser.add_argument("--input", help="test image")
+  parser.add_argument("--model_dir", help="saved model directory")
+  parser.add_argument("--model_name128", help="saved model 1")
+  parser.add_argument("--patch_128_only", default = False, type=bool, help="use model with patch size 128 only")
+  parser.add_argument("--model_name256", help="saved model 2")
+  parser.add_argument("--patch_256_only", default= False, type=bool, help="use model with patch size 256 only")
+  parser.add_argument("--both_model", default = False, type=bool, help="use both model versions")
+  parser.add_argument("--denoise", default = False, help="whether to denoise the input image")
+  args = parser.parse_args()
+  return args
 
-    prob[:, i*step:i*step+patch_size, j*step:j*step+patch_size] = np.maximum(pred2[:, i*step:i*step+patch_size, j*step:j*step+patch_size],patch_mask1)
-    #patch_mask = np.sum(patch_mask1, patch_mask2)
-    patch_mask1 = (patch_mask1>0.0001).astype(np.uint8)
-    #print(patch_mask.shape)
-    #predicted_patches.append(patch_mask)
-    
-    pred2[:, i*step:i*step+patch_size, j*step:j*step+patch_size] = pred2[:, i*step:i*step+patch_size, j*step:j*step+patch_size] + patch_mask1
-    pred2 = np.where(pred2>0, 1, 0).astype(pred2.dtype)
+def morph_transformation(image, z):
 
-step = 32
-patch_size = 128
-p2 = (512-patch_size)//step + 1
+  new = np.zeros((z, 512, 512), dtype='uint8')
 
+  element = cv2.getStructuringElement(cv2.MORPH_CROSS, (5,5))
+  openingSize = 2
+  k = 1
+  it=1
+  # Selecting a elliptical kernel
+  element2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, 
+              (2 * openingSize + k, 2 * openingSize + k),
+              (openingSize,openingSize))
+  
+  for i in range(z):
+    imDilated = cv2.erode(image[i, :, :], element2)
+    imClose = cv2.dilate(imDilated, element)
+    new[i, :, :] = imClose
+  
+  imageMorphOpened = cv2.morphologyEx(new, cv2.MORPH_OPEN, 
+                          element,iterations=it)  
 
-for i in range(p2):
-  #print(i)
-  for j in range(p2):
-    #print(j)
-    single_patch = large_image[:,i*step:i*step+patch_size, j*step:j*step+patch_size]
-    #print('patch', single_patch.shape)
-    single_patch_3ch = np.stack((single_patch,)*3, axis=-1)
-    single_patch_3ch_input = np.expand_dims(single_patch_3ch, axis=0)
-    single_patch_prediction2 = my_model2.predict(single_patch_3ch_input)
-    
-    patch_mask2 = np.reshape(single_patch_prediction2, (32,patch_size,patch_size))
+  return imageMorphOpened
 
-    prob[:, i*step:i*step+patch_size, j*step:j*step+patch_size] = np.maximum(pred2[:, i*step:i*step+patch_size, j*step:j*step+patch_size],patch_mask2)
-    #patch_mask = np.sum(patch_mask1, patch_mask2)
-    patch_mask2 = (patch_mask2>0.0001).astype(np.uint8)
-    #print(patch_mask.shape)
-    #predicted_patches.append(patch_mask)
-    
-    pred2[:, i*step:i*step+patch_size, j*step:j*step+patch_size] = pred2[:, i*step:i*step+patch_size, j*step:j*step+patch_size] + patch_mask2
-    pred2 = np.where(pred2>0, 1, 0).astype(pred2.dtype)
+def get_prediction(model, image, patch_size, step):
 
+  pred = np.zeros((32, 512, 512), dtype= "float32")
+  prob = np.zeros((32, 512, 512), dtype= "float32")
 
+  # Predict each 3D patch   
+  predicted_patches = []
+  p = (512-patch_size)//step + 1
 
-z = l_img.shape[0]
+  
+  for i in range(p):
+      
+    for j in range(p):
 
-test1 = resize_back(pred2,z)
-test1.shape
-pro = resize_back(prob, z)
+      single_patch = image[:,i*step:i*step+patch_size, j*step:j*step+patch_size]
+      single_patch_3ch = np.stack((single_patch,)*3, axis=-1)
+      single_patch_3ch_input = np.expand_dims(single_patch_3ch, axis=0)
+      single_patch_prediction = model.predict(single_patch_3ch_input)
+      
+      patch_mask = np.reshape(single_patch_prediction, (32,patch_size,patch_size))
+      patch_mask = (patch_mask - patch_mask.min())/(patch_mask.max()-patch_mask.min())
+
+      prob[:, i*step:i*step+patch_size, j*step:j*step+patch_size] = np.maximum(pred[:, i*step:i*step+patch_size, j*step:j*step+patch_size],patch_mask)
+      
+      patch_mask = (patch_mask>0.5).astype(np.uint8)
+      pred[:, i*step:i*step+patch_size, j*step:j*step+patch_size] = pred[:, i*step:i*step+patch_size, j*step:j*step+patch_size] + patch_mask
+      pred = np.where(pred>0, 1, 0).astype(pred.dtype)
+      
+  return pred
 
 
-def morph_transformation(image):
+def main():
 
-	new = np.zeros((z, 512, 512), dtype='uint8')
+  args = get_args()
 
-	element = cv2.getStructuringElement(cv2.MORPH_CROSS, (5,5))
-	openingSize = 2
-	k = 1
-	it=1
-	# Selecting a elliptical kernel
-	element2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, 
-	            (2 * openingSize + k, 2 * openingSize + k),
-	            (openingSize,openingSize))
-	black_pixels = np.where(image)
-	for i in range(image[i, :, :], element2)
-	  imClose = cv2.dilate(imDilated, element)
-	  new[i, :, :] = imClose
-	
-	imageMorphOpened = cv2.morphologyEx(new, cv2.MORPH_OPEN, 
-	                        element,iterations=it)  
+  large_image = io.imread(os.path.join(os.getcwd(), args.input))
+  if args.denoise:
+    large_image = denoise(os.path.join(os.getcwd(), args.input))
 
-	return imageMorphOpened
+  l_img = large_image
+
+  large_image = (large_image - large_image.min())/(large_image.max()-large_image.min())
+  large_image = resize_to_512(large_image)
+  gamma = 1
+  total_loss = dice_loss + (gamma * binary_focalloss)
+
+  ### Loading the models ###
+  if args.patch_128_only:
+    my_model1 = load_model(os.path.join(args.model_dir, args.model_name128), custom_objects={"K": K, 'dice_loss_plus_1binary_focal_loss':total_loss, 'iou_score':iou_score, 'f1_score':f1_score, 'precision':precision, 'recall':recall}, compile=False)
+    patch_size = 128
+    step = 64
+    predicted_image = get_prediction(my_model1, large_image, patch_size, step)
+
+  if args.patch_256_only:
+    my_model2 = load_model(os.path.join(args.model_dir + args.model_name256),custom_objects={"K": K, 'dice_loss_plus_1binary_focal_loss':total_loss, 'iou_score':iou_score, 'f1_score':f1_score, 'precision':precision, 'recall':recall}, compile=False)
+    patch_size = 256
+    step = 128
+    predicted_image = get_prediction(my_model2, large_image, patch_size, step)
+
+  if args.both_model:
+    my_model1 = load_model(os.path.join(args.model_dir, args.model_name128), custom_objects={"K": K, 'dice_loss_plus_1binary_focal_loss':total_loss, 'iou_score':iou_score, 'f1_score':f1_score, 'precision':precision, 'recall':recall}, compile=False)
+    patch_size = 128
+    step = 64
+    predicted1 = get_prediction(my_model1, large_image, patch_size, step)
+    my_model2 = load_model(os.path.join(args.model_dir + args.model_name256),custom_objects={"K": K, 'dice_loss_plus_1binary_focal_loss':total_loss, 'iou_score':iou_score, 'f1_score':f1_score, 'precision':precision, 'recall':recall}, compile=False)
+    patch_size = 256
+    step = 128
+    predicted2 = get_prediction(my_model2, large_image, patch_size, step)
+    predicted_image = (predicted1 + predicted2) / 2
+  
+  ### Post-Processing ###
+
+  z = l_img.shape[0]
+  prediction = resize_back(predicted_image, z)
+  imsave('prediction.tif', prediction)
+
+  image_morphed = morph_transformation(prediction, z)
+  labels, N = cc3d.connected_components(image_morphed, return_N=True)
+
+  labels_out = cc3d.dust(
+  labels, threshold=10000, 
+  connectivity=6, in_place=False
+  )
+  stats = cc3d.statistics(labels_out)
+  # SHOW MAX PROJECTION
+  imsave('labels.tif', labels_out)
+  IM_MAX= np.max(labels_out, axis=0)
+
+  # MEASURE VOLUME
+
+  img = (IM_MAX*255/6).astype(np.uint16)
+  img = np.stack((img,)*3, axis=-1)
+
+  for i in range(1,len(stats['centroids'])):
+    j = stats['centroids']
+    v = stats['voxel_counts']
+    if not v[i]==0:
+      
+      cv2.putText(img, "{:.1f}".format(v[i]*0.02045), (int(j[i][2]), int(j[i][1])), cv2.FONT_HERSHEY_SCRIPT_COMPLEX, 0.5, (255, 0, 0), 1)
+  imsave('result.tif', img)
+
+if __name__ == "__main__":
+    main()

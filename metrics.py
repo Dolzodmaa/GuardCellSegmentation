@@ -1,139 +1,78 @@
-from helper import f_score, iou_score, precision, recall, Metric
-import keras
+from helper import gather_channels, round_if_needed, get_reduce_axes, average
+from tensorflow import keras
 
+
+backend=keras.backend
+layers=keras.layers
+models=keras.models
+utils=keras.utils
 SMOOTH = 1e-5
-class IOUScore(Metric):
-    def __init__(
-            self,
-            class_weights=None,
-            class_indexes=None,
-            threshold=None,
-            per_image=False,
-            smooth=SMOOTH,
-            name=keras,
-    ):
-        name = name or 'iou_score'
-        super().__init__(name=name)
-        self.class_weights = class_weights if class_weights is not None else 1
-        self.class_indexes = class_indexes
-        self.threshold = threshold
-        self.per_image = per_image
-        self.smooth = smooth
-
-    def __call__(self, gt, pr):
-        return iou_score(
-            gt,
-            pr,
-            class_weights=self.class_weights,
-            class_indexes=self.class_indexes,
-            smooth=self.smooth,
-            per_image=self.per_image,
-            threshold=self.threshold,
-            **self.submodules
-        )
 
 
-class FScore(Metric):
+def iou_score(gt, pr, class_weights=1., class_indexes=None, smooth=SMOOTH, per_image=False, threshold=None, **kwargs):
+  
 
-    def __init__(
-            self,
-            beta=1,
-            class_weights=None,
-            class_indexes=None,
-            threshold=None,
-            per_image=False,
-            smooth=SMOOTH,
-            name=None,
-    ):
-        name = name or 'f{}-score'.format(beta)
-        super().__init__(name=name)
-        self.beta = beta
-        self.class_weights = class_weights if class_weights is not None else 1
-        self.class_indexes = class_indexes
-        self.threshold = threshold
-        self.per_image = per_image
-        self.smooth = smooth
+    gt, pr = gather_channels(gt, pr, indexes=class_indexes, **kwargs)
+    pr = round_if_needed(pr, threshold, **kwargs)
+    axes = get_reduce_axes(per_image, **kwargs)
 
-    def __call__(self, gt, pr):
-        return f_score(
-            gt,
-            pr,
-            beta=self.beta,
-            class_weights=self.class_weights,
-            class_indexes=self.class_indexes,
-            smooth=self.smooth,
-            per_image=self.per_image,
-            threshold=self.threshold,
-            **self.submodules
-        )
+    # score calculation
+    intersection = backend.sum(gt * pr, axis=axes)
+    union = backend.sum(gt + pr, axis=axes) - intersection
+
+    score = (intersection + smooth) / (union + smooth)
+    score = average(score, per_image, class_weights, **kwargs)
+
+    return score
 
 
-class Precision(Metric):
+def f1_score(gt, pr, beta=1, class_weights=1, class_indexes=None, smooth=SMOOTH, per_image=False, threshold=None,
+            **kwargs):
 
-    def __init__(
-            self,
-            class_weights=None,
-            class_indexes=None,
-            threshold=None,
-            per_image=False,
-            smooth=SMOOTH,
-            name=None,
-    ):
-        name = name or 'precision'
-        super().__init__(name=name)
-        self.class_weights = class_weights if class_weights is not None else 1
-        self.class_indexes = class_indexes
-        self.threshold = threshold
-        self.per_image = per_image
-        self.smooth = smooth
+    gt, pr = gather_channels(gt, pr, indexes=class_indexes, **kwargs)
+    pr = round_if_needed(pr, threshold, **kwargs)
+    axes = get_reduce_axes(per_image, **kwargs)
 
-    def __call__(self, gt, pr):
-        return precision(
-            gt,
-            pr,
-            class_weights=self.class_weights,
-            class_indexes=self.class_indexes,
-            smooth=self.smooth,
-            per_image=self.per_image,
-            threshold=self.threshold,
-            **self.submodules
-        )
+    # calculate score
+    tp = backend.sum(gt * pr, axis=axes)
+    fp = backend.sum(pr, axis=axes) - tp
+    fn = backend.sum(gt, axis=axes) - tp
+
+    score = ((1 + beta ** 2) * tp + smooth) \
+            / ((1 + beta ** 2) * tp + beta ** 2 * fn + fp + smooth)
+    score = average(score, per_image, class_weights, **kwargs)
+
+    return score
 
 
-class Recall(Metric):
+def precision(gt, pr, class_weights=1, class_indexes=None, smooth=SMOOTH, per_image=False, threshold=None, **kwargs):
 
-    def __init__(
-            self,
-            class_weights=None,
-            class_indexes=None,
-            threshold=None,
-            per_image=False,
-            smooth=SMOOTH,
-            name=None,
-    ):
-        name = name or 'recall'
-        super().__init__(name=name)
-        self.class_weights = class_weights if class_weights is not None else 1
-        self.class_indexes = class_indexes
-        self.threshold = threshold
-        self.per_image = per_image
-        self.smooth = smooth
+   
 
-    def __call__(self, gt, pr):
-        return recall(
-            gt,
-            pr,
-            class_weights=self.class_weights,
-            class_indexes=self.class_indexes,
-            smooth=self.smooth,
-            per_image=self.per_image,
-            threshold=self.threshold,
-            **self.submodules
-        )
+    gt, pr = gather_channels(gt, pr, indexes=class_indexes, **kwargs)
+    pr = round_if_needed(pr, threshold, **kwargs)
+    axes = get_reduce_axes(per_image, **kwargs)
+
+    # score calculation
+    tp = backend.sum(gt * pr, axis=axes)
+    fp = backend.sum(pr, axis=axes) - tp
+    
+    score = (tp + smooth) / (tp + fp + smooth)
+    score = average(score, per_image, class_weights, **kwargs)
+
+    return score
 
 
-# aliases
-iou_score = IOUScore()
-f1_score = FScore(beta=1)
-precision = Precision()
-recall = Recall()
+def recall(gt, pr, class_weights=1, class_indexes=None, smooth=SMOOTH, per_image=False, threshold=None, **kwargs):
+  
+    gt, pr = gather_channels(gt, pr, indexes=class_indexes, **kwargs)
+    pr = round_if_needed(pr, threshold, **kwargs)
+    axes = get_reduce_axes(per_image, **kwargs)
+
+    tp = backend.sum(gt * pr, axis=axes)
+    fn = backend.sum(gt, axis=axes) - tp
+
+    score = (tp + smooth) / (tp + fn + smooth)
+    score = average(score, per_image, class_weights, **kwargs)
+
+    return score

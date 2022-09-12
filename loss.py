@@ -40,5 +40,5 @@ class BinaryFocalLoss(Loss):
 
 dice_loss = DiceLoss()
 
-binary_focal_loss = BinaryFocalLoss()
+binary_focalloss = BinaryFocalLoss()
 

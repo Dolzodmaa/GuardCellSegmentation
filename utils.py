@@ -4,8 +4,10 @@ from keras_applications import get_submodules_from_kwargs
 from patchify import patchify, unpatchify
 import numpy as np
 import cv2
-import keras
+from tensorflow import keras
 import functools
+from skimage import io, img_as_float, morphology
+from skimage.restoration import denoise_nl_means, estimate_sigma
 
 def inject_global_submodules(func):
     @functools.wraps(func)
@@ -87,8 +89,27 @@ def resize_to_512(image):
       
   return img_stack_sm
 
-def make_patches(image):
-  img_patches = patchify(image, (32, 256, 256), step=64)
+def make_patches(image, patch_shape, step):
+  img_patches = patchify(image, (32, patch_shape, patch_shape), step=step)
   input_img = np.reshape(img_patches, (-1, img_patches.shape[3], img_patches.shape[4], img_patches.shape[5]))
   return input_img
 
+def denoise(img_path):
+
+  image = io.imread(img_path)
+  image_float = img_as_float(image)
+  sigma_est = np.mean(estimate_sigma(image,multichannel=False))
+  nlm = denoise_nl_means(image, h=1.15*sigma_est, patch_size=5, patch_distance=3)
+  nlm_uint = nlm.astype('uint16')
+  nlm_uint = nlm_uint/nlm_uint.max()
+  return nlm_uint
+
+def resize_back(image, dim):
+  img_stack_sm = np.zeros((dim, 512, 512), dtype="uint8")
+
+  for idx in range(512):
+      img = image[:, :, idx]
+      img_sm = cv2.resize(img, (512, dim), interpolation= cv2.INTER_LINEAR)
+      img_stack_sm[:, :, idx] = img_sm
+      
+  return img_stack_sm

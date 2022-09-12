@@ -1,13 +1,24 @@
 """
-    DOLZODMAA DAVAASUREN
+  Author: Dolzodmaa Davaasuren
+  Attention gated, patch-wise 3D segmentation model
+  
+  Base structure was on U-Net model
 
-    PATCH-WISE, ATTENTION GATED 3D MODEL
+  # Reference paper
+
+- [U-Net: Convolutional Networks for Biomedical Image Segmentation]
+  (https://arxiv.org/abs/1505.04597) (MICCAI 2015)
+
+  # Reference implementation of 3D U-Net
+  [Segmentation Models 3D]
+- https://github.com/ZFTurbo/segmentation_models_3D
 
 """
 from keras_applications import get_submodules_from_kwargs
 
 from common import Conv3dBn
 from tensorflow.keras import backend as K
+from keras import backend as K
 from backbone import Backbone
 import tensorflow as tf
 from tensorflow import keras
@@ -118,7 +129,7 @@ def DecoderTransposeX2Block(filters, stage, use_batchnorm=False):
     return layer
 def repeat_elem(tensor, rep):
 
-     return layers.Lambda(lambda x, repnum: K.repeat_elements(x, repnum, axis=4),
+    return layers.Lambda(lambda x, repnum: K.repeat_elements(x, repnum, axis=4),
                           arguments={'repnum': rep})(tensor)
 
 
@@ -152,9 +163,7 @@ def attention_block(x, gating, inter_shape):
     upsample_psi = layers.UpSampling3D(size=(shape_x[1] // shape_sigmoid[1], shape_x[2] // shape_sigmoid[2], shape_x[3] // shape_sigmoid[3]), data_format="channels_last")(sigmoid_xg)  # 32
 
     upsample_psi = repeat_elem(upsample_psi, shape_x[4]//shape_sigmoid[4] )
-    print('last_shape', upsample_psi)
     y = layers.multiply([upsample_psi, x])
-    print('y', K.int_shape(y))
     result = layers.Conv3D(shape_x[4], (1, 1, 1), padding='same')(y)
     result_bn = layers.BatchNormalization()(result)
     return result_bn

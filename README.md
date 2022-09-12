@@ -12,7 +12,8 @@ The pipeline uses a patch-wise, attention gated, 3D U-Net like architecture with
  ## Run a segmentation inference on a test image
  
   ```bash
- python3 predict.py --input 'test.tif' --model_dir '/log/' --model_name128 'p_128_model.epoch95-loss0.91.hdf5' --model_name256 'p_256_model.epoch28-loss0.69.hdf5'
+  To segment with model for only patch size 256
+ python3 predict.py --input 'test.tif' --model_dir '/log/' --patch_256_only True --model_name256 'model_256.hdf5'
  ```
  
  ## Train on a custom dataset

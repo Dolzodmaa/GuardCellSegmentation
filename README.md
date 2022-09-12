@@ -3,11 +3,14 @@
 Stomata segmentation is a tool for segmenting all guard cells in 3D volumetric images.
 The pipeline uses a patch-wise, attention gated, 3D U-Net like architecture with weighted combination of Dice and Focal Loss functions as a segmentation tool. The resulting output from the segmentation model is then post-processed to refine the result and separate each instance of guard cell. 
 
+
 ## Install dependencies
 
  ```bash
  pip3 install -r requirements.txt
  ```
+ ## Model Checkpoints
+ Model checkpoints can be downloaded at https://data.mendeley.com/datasets/2dvtw8cyhx/draft?a=6673d3a7-fd16-49c0-bad2-f790c8cddb16
  
  ## Run a segmentation inference on a test image
  

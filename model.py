@@ -14,7 +14,6 @@
 - https://github.com/ZFTurbo/segmentation_models_3D
 
 """
-from keras_applications import get_submodules_from_kwargs
 
 from common import Conv3dBn
 from tensorflow.keras import backend as K
@@ -41,11 +40,8 @@ def get_submodules():
     }
 
 
-# ---------------------------------------------------------------------
-#  Blocks
-# ---------------------------------------------------------------------
 def freeze_model(model, **kwargs):
-    """Set all layers non trainable, excluding BatchNormalization layers"""
+ 
     _, layers, _, _ = get_submodules_from_kwargs(kwargs)
     for layer in model.layers:
         if not isinstance(layer, layers.BatchNormalization):
@@ -70,63 +66,6 @@ def Conv3x3BnReLU(filters, use_batchnorm, name=None):
     return wrapper
 
 
-def DecoderUpsamplingX2Block(filters, stage, use_batchnorm=False):
-    up_name = 'decoder_stage{}_upsampling'.format(stage)
-    conv1_name = 'decoder_stage{}a'.format(stage)
-    conv2_name = 'decoder_stage{}b'.format(stage)
-    concat_name = 'decoder_stage{}_concat'.format(stage)
-
-    concat_axis = 4 if backend.image_data_format() == 'channels_last' else 1
-
-    def wrapper(input_tensor, skip=None):
-        x = layers.UpSampling3D(size=2, name=up_name)(input_tensor)
-
-        if skip is not None:
-            x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
-
-        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv1_name)(x)
-        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv2_name)(x)
-
-        return x
-
-    return wrapper
-
-
-
-
-def DecoderTransposeX2Block(filters, stage, use_batchnorm=False):
-    transp_name = 'decoder_stage{}a_transpose'.format(stage)
-    bn_name = 'decoder_stage{}a_bn'.format(stage)
-    relu_name = 'decoder_stage{}a_relu'.format(stage)
-    conv_block_name = 'decoder_stage{}b'.format(stage)
-    concat_name = 'decoder_stage{}_concat'.format(stage)
-
-    concat_axis = bn_axis = 4 if backend.image_data_format() == 'channels_last' else 1
-
-    def layer(input_tensor, skip=None):
-
-        x = layers.Conv3DTranspose(
-            filters,
-            kernel_size=(4, 4, 4),
-            strides=(2, 2, 2),
-            padding='same',
-            name=transp_name,
-            use_bias=not use_batchnorm,
-        )(input_tensor)
-
-        if use_batchnorm:
-            x = layers.BatchNormalization(axis=bn_axis, name=bn_name)(x)
-
-        x = layers.Activation('relu', name=relu_name)(x)
-
-        if skip is not None:
-            x = layers.Concatenate(axis=concat_axis, name=concat_name)([x, skip])
-
-        x = Conv3x3BnReLU(filters, use_batchnorm, name=conv_block_name)(x)
-
-        return x
-
-    return layer
 def repeat_elem(tensor, rep):
 
     return layers.Lambda(lambda x, repnum: K.repeat_elements(x, repnum, axis=4),
@@ -227,9 +166,7 @@ def DecoderAttnUpsamplingX2Block(filters, stage, use_batchnorm=False):
         return x
 
     return wrapper
-# ---------------------------------------------------------------------
-#  Unet Decoder
-# ---------------------------------------------------------------------
+
 
 def build_unet(
         backbone,
@@ -249,11 +186,6 @@ def build_unet(
     skips = ([backbone.get_layer(name=i).output if isinstance(i, str)
               else backbone.get_layer(index=i).output for i in skip_connection_layers])
     
-
-    # add center block if previous operation was maxpooling (for vgg models)
-    if isinstance(backbone.layers[-1], keras.layers.MaxPooling3D):
-        x = Conv3x3BnReLU(512, use_batchnorm, name='center_block1')(x)
-        x = Conv3x3BnReLU(512, use_batchnorm, name='center_block2')(x)
 
     # building decoder blocks
     for i in range(n_upsample_blocks):
@@ -285,13 +217,7 @@ def build_unet(
     return model
 
 
-# ---------------------------------------------------------------------
-#  Unet Model
-# ---------------------------------------------------------------------
-
-
-
-def Attention_UNet(backbone_name='densenet',
+def Model(backbone_name='densenet',
         input_shape=(None, None, 3),
         classes=1,
         activation='sigmoid',
@@ -305,7 +231,7 @@ def Attention_UNet(backbone_name='densenet',
         dropout=None,
         **kwargs):
     '''
-    Attention 3DUNet, 
+    Patch-wise Attention 3DUNet, 
     
     '''
     

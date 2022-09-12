@@ -17,7 +17,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, Learnin
 from skimage.restoration import denoise_nl_means, estimate_sigma
 from tensorflow.keras.models import load_model
 from loss import dice_loss, binary_focalloss
-from model import Attention_UNet
+from model import Model
 from dataset import dataset_loader
 import argparse
 from tensorflow import keras
@@ -79,7 +79,7 @@ def main():
     total_loss = dice_loss + (gamma * binary_focalloss)
     metrics = [iou_score, f1_score, precision, recall]
 
-    model = Attention_UNet(BACKBONE, classes=1, 
+    model = Model(BACKBONE, classes=1, 
                     input_shape=(32, args.patch_shape, args.patch_shape, 3), 
                     encoder_weights='imagenet',
                     activation=activation,

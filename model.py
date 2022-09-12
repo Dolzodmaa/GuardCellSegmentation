@@ -27,10 +27,6 @@ layers=keras.layers
 models=keras.models
 utils=keras.utils
 
-# ---------------------------------------------------------------------
-#  Utility functions
-# ---------------------------------------------------------------------
-
 def get_submodules():
     return {
         'backend': backend,

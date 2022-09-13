@@ -54,7 +54,7 @@ def Conv3x3BnReLU(filters, use_batchnorm, name=None):
             kernel_initializer='he_uniform',
             padding='same',
             use_batchnorm=use_batchnorm,
-            name=name
+            name=name,
             **kwargs
         )(input_tensor)
 

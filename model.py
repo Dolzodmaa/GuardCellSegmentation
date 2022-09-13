@@ -27,16 +27,15 @@ layers=keras.layers
 models=keras.models
 utils=keras.utils
 
-"""def get_submodules():
+def get_submodules():
     return {
         'backend': backend,
         'models': models,
         'layers': layers,
         'utils': utils,
-    }"""
+    }
 
-
-def freeze_model(model):
+def freeze_model(model, **kwargs):
  
     #_, layers, _, _ = get_submodules_from_kwargs(kwargs)
     for layer in model.layers:
@@ -45,7 +44,7 @@ def freeze_model(model):
     return
 
 def Conv3x3BnReLU(filters, use_batchnorm, name=None):
-    #kwargs = get_submodules()
+    kwargs = get_submodules()
 
     def wrapper(input_tensor):
         return Conv3dBn(
@@ -56,7 +55,7 @@ def Conv3x3BnReLU(filters, use_batchnorm, name=None):
             padding='same',
             use_batchnorm=use_batchnorm,
             name=name
-            #**kwargs
+            **kwargs
         )(input_tensor)
 
     return wrapper

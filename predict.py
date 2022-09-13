@@ -72,7 +72,6 @@ def get_prediction(model, image, patch_size, step):
   prob = np.zeros((32, 512, 512), dtype= "float32")
 
   # Predict each 3D patch   
-  predicted_patches = []
   p = (512-patch_size)//step + 1
 
   

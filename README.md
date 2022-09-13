@@ -18,7 +18,7 @@ The pipeline uses a patch-wise, attention gated, 3D U-Net like architecture with
   ```bash
  python3 predict.py --input '/img_test/1-1 after.tif' --model_dir '/log/' --patch_256_only True --model_name256 'model_256.hdf5'
  ```
- ### To segment with model for only patch size 256
+ ### To segment with model for only patch size 128
  ```bash
  python3 predict.py --input '/img_test/1-1 after.tif' --model_dir '/log/' --patch_128_only True --model_name128 'model_128.hdf5'
  ```

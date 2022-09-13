@@ -1,5 +1,3 @@
-
-
 import tensorflow as tf
 import numpy as np
 import os
@@ -22,13 +20,14 @@ from dataset import dataset_loader
 import argparse
 from tensorflow import keras
 import helper
+from metrics import iou_score, f1_score, precision, recall
+
 helper.KerasObject.set_submodules(
         backend= keras.backend,
         layers= keras.layers,
         models= keras.models,
         utils= keras.utils,
     )
-from metrics import iou_score, f1_score, precision, recall
 
 
 def get_args():
@@ -51,16 +50,6 @@ def get_args():
     args = parser.parse_args()
     return args
     
-def inject_global_submodules(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        kwargs['backend'] = keras.backend
-        kwargs['layers'] = keras.layers
-        kwargs['models'] = keras.models
-        kwargs['utils'] = keras.utils
-        return func(*args, **kwargs)
-
-    return wrapper
 
 def main():
     helper.KerasObject.set_submodules(

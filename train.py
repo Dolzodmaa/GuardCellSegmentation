@@ -105,7 +105,7 @@ def main():
             epochs=args.epochs,
             verbose=1,
             validation_data=(X_test, y_test),
-            callbacks=[ reduce_lr, model_checkpoint_callback])
+            callbacks=[ reduce_lr, model_checkpoint_callback, early_stopping])
 
     with open('/content/drive/MyDrive/Guard_cell_data/trainHistoryDict_256', 'wb') as file_pi:
         pickle.dump(history.history, file_pi)

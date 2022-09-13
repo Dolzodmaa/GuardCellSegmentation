@@ -1,5 +1,3 @@
-""" Utility functions for segmentation models """
-
 from keras_applications import get_submodules_from_kwargs
 from patchify import patchify, unpatchify
 import numpy as np
@@ -9,16 +7,6 @@ import functools
 from skimage import io, img_as_float, morphology
 from skimage.restoration import denoise_nl_means, estimate_sigma
 
-def inject_global_submodules(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        kwargs['backend'] = keras.backend
-        kwargs['layers'] = keras.layers
-        kwargs['models'] = keras.models
-        kwargs['utils'] = keras.utils
-        return func(*args, **kwargs)
-
-    return wrapper
 
 def set_trainable(model, recompile=True, **kwargs):
    
@@ -36,7 +24,6 @@ def set_trainable(model, recompile=True, **kwargs):
         )
 
 
-@inject_global_submodules
 def set_regularization(
         model,
         kernel_regularizer=None,
@@ -71,8 +58,9 @@ def set_regularization(
     out.set_weights(model.get_weights())
 
     return out
+
+
 def freeze_model(model, **kwargs):
-    """Set all layers non trainable, excluding BatchNormalization layers"""
     _, layers, _, _ = get_submodules_from_kwargs(kwargs)
     for layer in model.layers:
         if not isinstance(layer, layers.BatchNormalization):

@@ -1,11 +1,7 @@
 import tensorflow as tf
 import os
 import pickle
-from skimage import io
-import numpy as np
-from matplotlib import pyplot as plt
-from tensorflow.keras import backend as K
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, LearningRateScheduler
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from loss import dice_loss, binary_focalloss
 from model import Model
 from dataset import dataset_loader

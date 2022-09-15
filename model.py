@@ -37,7 +37,6 @@ def get_submodules():
 
 def freeze_model(model, **kwargs):
  
-    #_, layers, _, _ = get_submodules_from_kwargs(kwargs)
     for layer in model.layers:
         if not isinstance(layer, layers.BatchNormalization):
             layer.trainable = False

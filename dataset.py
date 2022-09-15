@@ -1,19 +1,23 @@
-
-import tensorflow as tf
 import numpy as np
 import os
-from skimage import io, img_as_float, img_as_ubyte
-from patchify import patchify, unpatchify
+from skimage import io
 import numpy as np
-from matplotlib import pyplot as plt
-from keras import backend as K
 from sklearn.model_selection import train_test_split
-import cv2
-from skimage.transform import rescale, resize
-from PIL import Image
-from tifffile import imsave, imread
+from tifffile import imread, imsave
 from skimage.restoration import denoise_nl_means, estimate_sigma
 from utils import resize_to_512, make_patches
+
+def denoise(img_path):
+
+    train_dir = os.listdir(img_path)
+    for image_name in train_dir:
+ 
+        image = io.imread(img_path+image_name)
+        sigma_est = np.mean(estimate_sigma(image,multichannel=False))
+        nlm = denoise_nl_means(image, h=1.15*sigma_est, patch_size=5, patch_distance=3)
+        nlm_uint = nlm.astype('uint16')
+        imsave(img_path+image_name, nlm_uint)
+
 
 def dataset_loader(img_dir, mask_dir, patch_shape, step):
 

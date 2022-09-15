@@ -4,7 +4,7 @@ import pickle
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from loss import dice_loss, binary_focalloss
 from model import Model
-from dataset import dataset_loader
+from dataset import dataset_loader, denoise
 import argparse
 from tensorflow import keras
 import helper
@@ -26,6 +26,7 @@ def get_args():
     parser.add_argument("--log_dir", help="directory for logging.")
     parser.add_argument("--img_dir", help="training image location")
     parser.add_argument("--mask_dir", help="training label location")
+    parser.add_argument("--denoise_train_data", default=False, help="used when denoising is needed for the training data")
     parser.add_argument("--patch_shape", default = 256, type=int, help="shape of patches")
     parser.add_argument("--learning_rate", default = 0.0001)
     parser.add_argument("--patch_step", default = 128, type=int, help="step size for patch windows: 64 for patch size 128, 128 for patch size 256")
@@ -85,7 +86,10 @@ def main():
         mode='max',
         save_best_only=True,
         verbose = 1)
- 
+    
+    if args.denoise_train_data:
+        denoise(args.img_dir)
+
     X_train, X_test, y_train, y_test = dataset_loader(args.img_dir, args.mask_dir, args.patch_shape, args.patch_step)
     history = model.fit(X_train, 
             y_train,
@@ -95,7 +99,7 @@ def main():
             validation_data=(X_test, y_test),
             callbacks=[ reduce_lr, model_checkpoint_callback, early_stopping])
 
-    with open('/content/drive/MyDrive/Guard_cell_data/trainHistoryDict_256', 'wb') as file_pi:
+    with open('train_history.pkl', 'wb') as file_pi:
         pickle.dump(history.history, file_pi)
 
 if __name__ == "__main__":

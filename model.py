@@ -76,23 +76,14 @@ def gating_signal(input, out_size, batch_norm=False):
 
 def attention_block(x, gating, inter_shape):
     shape_x = K.int_shape(x)
-    #print('shape_x', shape_x)
-    shape_g = K.int_shape(gating)
-
     theta_x = layers.Conv3D(inter_shape, kernel_size = 1, strides = 2, padding='same')(x)  # 16
-    shape_theta_x = K.int_shape(theta_x)
-    #print('theta_x', shape_theta_x)
-
     phi_g = layers.Conv3D(inter_shape, (1, 1, 1), strides = 1, padding='same')(gating)
-
-    #print('phi_g', K.int_shape(phi_g))
     concat_xg = layers.add([phi_g, theta_x])
     act_xg = layers.Activation('relu')(concat_xg)
     psi = layers.Conv3D(inter_shape, (1, 1, 1), padding='same')(act_xg)
     sigmoid_xg = layers.Activation('sigmoid')(psi)
     shape_sigmoid = K.int_shape(sigmoid_xg)
-    #print('shape_sigmoid', shape_sigmoid)
-    #sigmoid_x = layers.Lambda(lambda x: x[0, :,: ,:, :])(sigmoid_xg)
+  
     upsample_psi = layers.UpSampling3D(size=(shape_x[1] // shape_sigmoid[1], shape_x[2] // shape_sigmoid[2], shape_x[3] // shape_sigmoid[3]), data_format="channels_last")(sigmoid_xg)  # 32
 
     upsample_psi = repeat_elem(upsample_psi, shape_x[4]//shape_sigmoid[4] )
@@ -176,12 +167,9 @@ def build_unet(
     input_ = backbone.input
     x = backbone.output
 
-    # extract skip connections
     skips = ([backbone.get_layer(name=i).output if isinstance(i, str)
               else backbone.get_layer(index=i).output for i in skip_connection_layers])
     
-
-    # building decoder blocks
     for i in range(n_upsample_blocks):
 
         if i < len(skips):
@@ -194,7 +182,6 @@ def build_unet(
     if dropout:
         x = layers.SpatialDropout3D(dropout, name='pyramid_dropout')(x)
 
-    # model head (define number of output classes)
     x = layers.Conv3D(
         filters=classes,
         kernel_size=(3, 3, 3),
@@ -205,7 +192,6 @@ def build_unet(
     )(x)
     x = layers.Activation(activation, name=activation)(x)
 
-    # create keras model instance
     model = models.Model(input_, x)
 
     return model
@@ -261,11 +247,8 @@ def Model(backbone_name='densenet',
         dropout=dropout,
     )
 
-    # lock encoder weights for fine-tuning
     if encoder_freeze:
         freeze_model(Backbone, **kwargs)
-
-    # loading model weights
     if weights is not None:
         model.load_weights(weights)
 

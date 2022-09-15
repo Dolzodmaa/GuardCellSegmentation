@@ -1,5 +1,4 @@
 SMOOTH = 1e-5
-import tensorflow as tf
 from tensorflow import keras
 
 backend=keras.backend
@@ -189,10 +188,6 @@ def f_score(gt, pr, beta=1, class_weights=1, class_indexes=None, smooth=SMOOTH, 
 
     return score
 
-
-# ----------------------------------------------------------------
-#   Loss Functions
-# ----------------------------------------------------------------
 
 def categorical_crossentropy(gt, pr, class_weights=1., class_indexes=None, **kwargs):
 

@@ -14,10 +14,7 @@
 import os
 from keras_applications import imagenet_utils
 from tensorflow import keras
-from keras_applications.imagenet_utils import decode_predictions
-from keras_applications.imagenet_utils import _obtain_input_shape
 from weights import load_model_weights
-import keras_applications as ka
 
 backend=keras.backend
 layers=keras.layers

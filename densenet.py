@@ -8,7 +8,7 @@
 # Reference implementation
 
 - [TensorNets]
-  (https://github.com/taehoonlee/tensornets/blob/master/tensornets/densenets.py)
+  (https://github.com/ZFTurbo/classification_models_3D/blob/master/classification_models_3D/models/densenet.py)
 """
 
 import os

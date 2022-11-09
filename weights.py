@@ -1,3 +1,10 @@
+"""
+Weights are converted from 2D to 3D according to the paper
+"3D convolutional neural networks for stalled brain capillary detection"
+
+"""
+
+
 from tensorflow import keras
 
 backend=keras.backend

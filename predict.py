@@ -3,10 +3,13 @@ import os
 from skimage import io
 import numpy as np
 from matplotlib import pyplot as plt
+import tensorflow as tf
 from tensorflow.keras import backend as K
 from keras import backend as K
 import cv2
+from model import Model
 from tifffile import imsave
+from backbone import Backbone
 from tensorflow.keras.models import load_model
 import argparse
 from utils import resize_to_512, resize_back
@@ -102,28 +105,63 @@ def main():
   gamma = 1
   total_loss = dice_loss + (gamma * binary_focalloss)
 
+  BACKBONE = 'densenet' 
+  activation = 'sigmoid'
+  LR = 0.0001
+  optim = tf.keras.optimizers.Adam(LR)
+  gamma = 3
+  total_loss = dice_loss + (gamma * binary_focalloss)
+  metrics = [iou_score, f1_score, precision, recall]
+
   ### Loading the models ###
+  model = Model(BACKBONE, classes=1, 
+                    input_shape=(32, 128, 128, 3), 
+                    encoder_weights='imagenet',
+                    activation=activation,
+                    dropout=0.15
+                    )
+  model.compile(optimizer = optim, loss=total_loss, metrics=metrics)
+
   if args.patch_128_only:
-    my_model1 = load_model(os.path.join(args.model_dir, args.model_name128), custom_objects={"K": K, 'dice_loss_plus_1binary_focal_loss':total_loss, 'iou_score':iou_score, 'f1_score':f1_score, 'precision':precision, 'recall':recall}, compile=False)
+    #my_model1 = load_model(os.path.join(args.model_dir, args.model_name128), custom_objects={"K": K, 'dice_loss_plus_1binary_focal_loss':total_loss, 'iou_score':iou_score, 'f1_score':f1_score, 'precision':precision, 'recall':recall}, compile=False)
+    #print(my_model1)
+    model.load_weights(os.path.join(args.model_dir, args.model_name128))
     patch_size = 128
     step = 64
-    predicted_image = get_prediction(my_model1, large_image, patch_size, step)
+    predicted_image = get_prediction(model, large_image, patch_size, step)
 
   if args.patch_256_only:
-    my_model2 = load_model(os.path.join(args.model_dir + args.model_name256),custom_objects={"K": K, 'dice_loss_plus_1binary_focal_loss':total_loss, 'iou_score':iou_score, 'f1_score':f1_score, 'precision':precision, 'recall':recall}, compile=False)
+    #my_model2 = model.load_weights(os.path.join(args.model_dir + args.model_name256),custom_objects={"K": K, 'dice_loss_plus_1binary_focal_loss':total_loss, 'iou_score':iou_score, 'f1_score':f1_score, 'precision':precision, 'recall':recall}, compile=False)
+    model.load_weights(os.path.join(args.model_dir, args.model_name128))
     patch_size = 256
     step = 128
-    predicted_image = get_prediction(my_model2, large_image, patch_size, step)
+    predicted_image = get_prediction(model, large_image, patch_size, step)
 
   if args.both_model:
-    my_model1 = load_model(os.path.join(args.model_dir, args.model_name128), custom_objects={"K": K, 'dice_loss_plus_1binary_focal_loss':total_loss, 'iou_score':iou_score, 'f1_score':f1_score, 'precision':precision, 'recall':recall}, compile=False)
+    #my_model1 = model.load_weights(os.path.join(args.model_dir, args.model_name128), custom_objects={"K": K, 'dice_loss_plus_1binary_focal_loss':total_loss, 'iou_score':iou_score, 'f1_score':f1_score, 'precision':precision, 'recall':recall}, compile=False)
+    model1 = Model(BACKBONE, classes=1, 
+                    input_shape=(32, 128, 128, 3), 
+                    encoder_weights='imagenet',
+                    activation=activation,
+                    dropout=0.15
+                    )
+    model1.compile(optimizer = optim, loss=total_loss, metrics=metrics)
+  
+    model1.load_weights(os.path.join(args.model_dir, args.model_name128))
     patch_size = 128
     step = 64
-    predicted1 = get_prediction(my_model1, large_image, patch_size, step)
-    my_model2 = load_model(os.path.join(args.model_dir + args.model_name256),custom_objects={"K": K, 'dice_loss_plus_1binary_focal_loss':total_loss, 'iou_score':iou_score, 'f1_score':f1_score, 'precision':precision, 'recall':recall}, compile=False)
+    predicted1 = get_prediction(model1, large_image, patch_size, step)
+    #my_model2 = load_model(os.path.join(args.model_dir + args.model_name256),custom_objects={"K": K, 'dice_loss_plus_1binary_focal_loss':total_loss, 'iou_score':iou_score, 'f1_score':f1_score, 'precision':precision, 'recall':recall}, compile=False)
+    model2 = Model(BACKBONE, classes=1, 
+                    input_shape=(32, 128, 128, 3), 
+                    encoder_weights='imagenet',
+                    activation=activation,
+                    dropout=0.15
+                    )
+    model2.load_weights(os.path.join(args.model_dir, args.model_name256))
     patch_size = 256
     step = 128
-    predicted2 = get_prediction(my_model2, large_image, patch_size, step)
+    predicted2 = get_prediction(model2, large_image, patch_size, step)
     predicted_image = (predicted1 + predicted2) / 2
   
   ### Post-Processing ###
@@ -136,7 +174,7 @@ def main():
   labels, N = cc3d.connected_components(image_morphed, return_N=True)
 
   labels_out = cc3d.dust(
-  labels, threshold=10000, 
+  labels, threshold=1, 
   connectivity=6, in_place=False
   )
   stats = cc3d.statistics(labels_out)
